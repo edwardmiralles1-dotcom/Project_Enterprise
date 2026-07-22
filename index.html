@@ -1,0 +1,647 @@
+<title>BCMS &amp; ISMS Risk Dashboard — ABANA 2025</title>
+<style>
+  :root{
+    --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --accent:#2a78d6; --accent-strong:#184f95; --accent-soft:#86b6ef;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    --font-serif: Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;
+    --font-sans: system-ui,-apple-system,"Segoe UI",sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,0.10);
+      --accent:#3987e5; --accent-strong:#3987e5; --accent-soft:#6da7ec;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,0.10);
+    --accent:#3987e5; --accent-strong:#3987e5; --accent-soft:#6da7ec;
+    color-scheme: dark;
+  }
+  *{ box-sizing:border-box; }
+  body{ background:var(--page); color:var(--ink); font-family:var(--font-sans);
+        margin:0; padding:0 20px 64px; }
+  h1,h2,h3{ font-family:var(--font-serif); font-weight:700; text-wrap:balance; margin:0; }
+  table{ border-collapse:collapse; width:100%; }
+  button{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none!important; animation:none!important; } }
+
+  .wrap{ max-width:1160px; margin:0 auto; }
+
+  /* ---------- header ---------- */
+  .report-header{ padding:48px 0 28px; border-bottom:1px solid var(--border); }
+  .eyebrow{ font-family:var(--font-sans); font-size:11px; font-weight:700; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  .report-header h1{ font-size:clamp(26px,3.4vw,38px); line-height:1.15; color:var(--ink); }
+  .report-header .sub{ margin-top:10px; max-width:66ch; color:var(--ink-2); font-size:15px; line-height:1.55; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:18px; font-size:12.5px; color:var(--muted); }
+  .meta-row span{ display:inline-flex; align-items:center; gap:6px; }
+  .meta-row b{ color:var(--ink-2); font-weight:600; }
+
+  /* ---------- KPI strip ---------- */
+  .kpis{ display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--border);
+         border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:28px 0 40px; }
+  .kpi{ background:var(--surface); padding:20px 18px; min-width:0; }
+  .kpi .label{ font-size:11.5px; font-weight:600; letter-spacing:.03em; color:var(--muted);
+               text-transform:uppercase; margin-bottom:10px; }
+  .kpi .value{ font-family:var(--font-sans); font-size:34px; font-weight:650; line-height:1; color:var(--ink); }
+  .kpi .cap{ margin-top:8px; font-size:12.5px; color:var(--ink-2); line-height:1.4; }
+  .kpi .cap .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px;
+                  position:relative; top:-1px; }
+  @media (max-width:880px){ .kpis{ grid-template-columns:repeat(2,1fr); } .kpi:nth-child(1){grid-column:1/-1;} }
+
+  /* ---------- exhibit shell ---------- */
+  .exhibit{ background:var(--surface); border:1px solid var(--border); border-radius:12px;
+            padding:26px 28px 24px; margin-bottom:22px; }
+  .exhibit-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+                 margin-bottom:6px; flex-wrap:wrap; }
+  .exhibit-title-block .eyebrow{ margin-bottom:6px; }
+  .exhibit h2{ font-size:19px; color:var(--ink); }
+  .exhibit .finding{ margin-top:8px; font-size:13.5px; color:var(--ink-2); line-height:1.5; max-width:70ch; }
+  .exhibit .finding b{ color:var(--ink); font-weight:600; }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  @media (max-width:880px){ .two-col{ grid-template-columns:1fr; } }
+
+  .toggle-table{ flex:none; background:transparent; border:1px solid var(--border); color:var(--ink-2);
+                 font-size:12px; font-weight:600; padding:7px 12px; border-radius:7px; cursor:pointer; }
+  .toggle-table:hover{ border-color:var(--accent); color:var(--accent); }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:14px 20px; margin:18px 0 20px; font-size:12.5px; color:var(--ink-2); }
+  .legend .item{ display:inline-flex; align-items:center; gap:7px; }
+  .legend .sw{ width:10px; height:10px; border-radius:3px; flex:none; }
+  .legend .sw.dot{ border-radius:50%; }
+
+  /* ---------- stacked profile bars (Exhibit 1) ---------- */
+  .profile-row{ display:grid; grid-template-columns:130px 1fr; align-items:center; gap:14px; margin-bottom:14px; }
+  .profile-row:last-of-type{ margin-bottom:0; }
+  .profile-row .rlabel{ font-size:13px; font-weight:600; color:var(--ink); }
+  .profile-row .rlabel .n{ display:block; font-weight:400; color:var(--muted); font-size:11.5px; margin-top:2px; }
+  .profile-track{ position:relative; height:26px; border-radius:4px; overflow:hidden; display:flex;
+                   background:var(--grid); }
+  .profile-seg{ height:100%; position:relative; cursor:default; }
+  .profile-seg + .profile-seg{ border-left:2px solid var(--surface); }
+  .profile-seg:last-child{ border-top-right-radius:4px; border-bottom-right-radius:4px; }
+  .axis-pct{ display:grid; grid-template-columns:130px 1fr; gap:14px; margin-top:8px; }
+  .axis-pct .scale{ position:relative; height:14px; }
+  .axis-pct .scale span{ position:absolute; top:0; font-size:10.5px; color:var(--muted); transform:translateX(-50%); }
+  .axis-pct .scale span:first-child{ transform:none; }
+  .axis-pct .scale span:last-child{ transform:translateX(-100%); }
+
+  /* ---------- horizontal ranked bars (Exhibit 4 / 5) ---------- */
+  .rank-row{ display:grid; grid-template-columns:190px 1fr 78px; align-items:center; gap:12px; margin-bottom:10px; }
+  .rank-row:last-child{ margin-bottom:0; }
+  .rank-row .rlabel{ font-size:12.5px; color:var(--ink-2); line-height:1.3; }
+  .rank-row.other .rlabel{ font-style:italic; color:var(--muted); }
+  .rank-track{ position:relative; height:18px; background:var(--grid); border-radius:3px; }
+  .rank-fill{ position:absolute; left:0; top:0; height:100%; border-radius:0 4px 4px 0; background:var(--accent); }
+  .rank-fill.muted{ background:var(--muted); }
+  .rank-val{ font-size:12.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
+  .rank-val .pct{ display:block; font-weight:400; color:var(--muted); font-size:11px; }
+
+  /* ---------- dumbbell (Exhibit 2) ---------- */
+  .dumbbell{ margin-top:4px; }
+  .db-axis{ display:grid; grid-template-columns:250px 1fr 92px; gap:14px; margin-bottom:6px; }
+  .db-axis .scale{ position:relative; height:16px; }
+  .db-axis .scale i{ position:absolute; top:0; font-style:normal; font-size:10.5px; color:var(--muted); transform:translateX(-50%); }
+  .db-row{ display:grid; grid-template-columns:250px 1fr 92px; gap:14px; align-items:center;
+           padding:8px 0; border-top:1px solid var(--grid); }
+  .db-row:first-of-type{ border-top:none; }
+  .db-label .name{ font-size:12.8px; font-weight:600; color:var(--ink); line-height:1.3; }
+  .db-label .meta{ margin-top:2px; font-size:11px; color:var(--muted); }
+  .db-label .tag{ display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.03em; color:var(--accent);
+                   border:1px solid var(--accent); border-radius:3px; padding:1px 4px; margin-right:6px; vertical-align:1px; }
+  .db-track{ position:relative; height:20px;
+             background-image:repeating-linear-gradient(to right,var(--grid) 0 1px,transparent 1px calc(100%/6.5));
+             background-position:left center; }
+  .db-line{ position:absolute; top:50%; height:2px; background:var(--baseline); transform:translateY(-50%); }
+  .db-dot{ position:absolute; top:50%; width:11px; height:11px; border-radius:50%; transform:translate(-50%,-50%);
+           box-shadow:0 0 0 2px var(--surface); }
+  .db-dot.inherent{ background:var(--accent-strong); }
+  .db-dot.residual{ background:var(--accent-soft); }
+  .db-score{ font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink-2); text-align:right; white-space:nowrap; }
+  .db-score b{ color:var(--ink); font-weight:700; }
+
+  /* ---------- alert cards (Exhibit 3) ---------- */
+  .alert-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:6px; }
+  @media (max-width:880px){ .alert-grid{ grid-template-columns:1fr; } }
+  .alert-card{ border:1px solid var(--border); border-left:3px solid var(--warning); border-radius:8px;
+               padding:16px 16px 14px; background:var(--page); }
+  .alert-card .scoreline{ display:flex; align-items:baseline; gap:8px; font-variant-numeric:tabular-nums; }
+  .alert-card .scoreline .from{ font-size:13px; color:var(--muted); text-decoration:line-through; }
+  .alert-card .scoreline .arrow{ color:var(--muted); font-size:13px; }
+  .alert-card .scoreline .to{ font-size:20px; font-weight:700; color:var(--ink); }
+  .alert-card .pill{ display:inline-block; margin-top:8px; font-size:10.5px; font-weight:700; letter-spacing:.03em;
+                      text-transform:uppercase; color:var(--warning); background:color-mix(in srgb, var(--warning) 16%, transparent);
+                      border-radius:4px; padding:2px 7px; }
+  .alert-card p{ margin:10px 0 0; font-size:13px; color:var(--ink-2); line-height:1.5; }
+  .alert-card .owner{ margin-top:10px; font-size:11.5px; color:var(--muted); }
+
+  /* ---------- recommendations ---------- */
+  .rec-list{ display:flex; flex-direction:column; gap:0; margin-top:8px; }
+  .rec{ display:grid; grid-template-columns:34px 1fr; gap:16px; padding:16px 0; border-top:1px solid var(--grid); }
+  .rec:first-child{ border-top:none; }
+  .rec .num{ font-family:var(--font-serif); font-size:20px; color:var(--accent); font-weight:700; }
+  .rec h3{ font-size:14.5px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+  .rec p{ margin:0; font-size:13.3px; color:var(--ink-2); line-height:1.55; max-width:78ch; }
+
+  /* ---------- data tables ---------- */
+  .data-table th, .data-table td{ text-align:left; padding:8px 10px; font-size:12.5px; border-bottom:1px solid var(--grid); }
+  .data-table th{ color:var(--muted); font-weight:600; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; }
+  .data-table td{ color:var(--ink-2); }
+  .data-table td.num, .data-table th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .table-scroll{ overflow-x:auto; }
+
+  footer{ margin-top:8px; padding-top:20px; border-top:1px solid var(--border); font-size:11.5px; color:var(--muted); line-height:1.6; }
+
+  /* tooltip */
+  #tooltip{ position:fixed; pointer-events:none; background:var(--ink); color:var(--page); font-size:12px;
+            padding:7px 10px; border-radius:6px; max-width:240px; line-height:1.4; z-index:50; opacity:0; }
+  #tooltip.show{ opacity:1; }
+  #tooltip .t-val{ font-weight:700; }
+  #tooltip .t-lab{ opacity:.75; margin-top:1px; }
+</style>
+
+<div class="wrap">
+
+  <header class="report-header">
+    <p class="eyebrow">Governance, Risk &amp; Compliance — Management Report</p>
+    <h1>BCMS &amp; ISMS Risk Assessment 2025</h1>
+    <p class="sub">Combined Business Continuity (BCMS) and Information Security (ISMS) risk register for ABANA — inherent vs. residual scoring, concentration, and outstanding control gaps, prepared for management review.</p>
+    <div class="meta-row">
+      <span><b>97</b> risks assessed</span>
+      <span>Source: <b>Combined Summary</b> tab</span>
+      <span>Scoring: Consequence × Likelihood</span>
+      <span>Dashboard generated <b>22 Jul 2026</b></span>
+    </div>
+  </header>
+
+  <section class="kpis" aria-label="Key figures">
+    <div class="kpi">
+      <div class="label">Total risks logged</div>
+      <div class="value">97</div>
+      <div class="cap">16 BCMS + 81 ISMS</div>
+    </div>
+    <div class="kpi">
+      <div class="label">BCMS risks</div>
+      <div class="value">16</div>
+      <div class="cap">Business continuity register</div>
+    </div>
+    <div class="kpi">
+      <div class="label">ISMS risks</div>
+      <div class="value">81</div>
+      <div class="cap">Information security register</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Critical / High inherent</div>
+      <div class="value">9</div>
+      <div class="cap"><span class="dot" style="background:var(--critical)"></span>9.3% of all logged risk</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Residual still ≥ Medium</div>
+      <div class="value">3</div>
+      <div class="cap"><span class="dot" style="background:var(--warning)"></span>94 of 97 (96.9%) now Low</div>
+    </div>
+  </section>
+
+  <!-- EXHIBIT 1 -->
+  <section class="exhibit" id="ex1">
+    <div class="exhibit-head">
+      <div class="exhibit-title-block">
+        <p class="eyebrow">Exhibit 1</p>
+        <h2>Inherent risk priority by register</h2>
+        <p class="finding">BCMS carries proportionally more <b>Critical</b>-rated scenarios (31%); ISMS carries none, but concentrates its risk in <b>Medium</b> and <b>Low</b>.</p>
+      </div>
+      <button class="toggle-table" data-target="ex1">View data table</button>
+    </div>
+
+    <div class="legend" aria-hidden="true">
+      <span class="item"><span class="sw" style="background:var(--critical)"></span>Critical</span>
+      <span class="item"><span class="sw" style="background:var(--serious)"></span>High</span>
+      <span class="item"><span class="sw" style="background:var(--warning)"></span>Medium</span>
+      <span class="item"><span class="sw" style="background:var(--good)"></span>Low</span>
+      <span class="item"><span class="sw" style="background:var(--muted)"></span>Not rated</span>
+    </div>
+
+    <div class="viz" id="ex1-viz">
+      <div class="profile-row">
+        <div class="rlabel">BCMS<span class="n">n = 16</span></div>
+        <div class="profile-track" role="img" aria-label="BCMS inherent priority mix">
+          <div class="profile-seg" style="width:31.25%;background:var(--critical)" tabindex="0" data-tip-title="BCMS · Critical" data-tip-val="5 risks" data-tip-lab="31.3% of BCMS register"></div>
+          <div class="profile-seg" style="width:31.25%;background:var(--warning)" tabindex="0" data-tip-title="BCMS · Medium" data-tip-val="5 risks" data-tip-lab="31.3% of BCMS register"></div>
+          <div class="profile-seg" style="width:31.25%;background:var(--good)" tabindex="0" data-tip-title="BCMS · Low" data-tip-val="5 risks" data-tip-lab="31.3% of BCMS register"></div>
+          <div class="profile-seg" style="width:6.25%;background:var(--muted)" tabindex="0" data-tip-title="BCMS · Not rated" data-tip-val="1 risk" data-tip-lab="6.3% of BCMS register — blank in source"></div>
+        </div>
+      </div>
+      <div class="profile-row">
+        <div class="rlabel">ISMS<span class="n">n = 81</span></div>
+        <div class="profile-track" role="img" aria-label="ISMS inherent priority mix">
+          <div class="profile-seg" style="width:4.938%;background:var(--serious)" tabindex="0" data-tip-title="ISMS · High" data-tip-val="4 risks" data-tip-lab="4.9% of ISMS register"></div>
+          <div class="profile-seg" style="width:40.74%;background:var(--warning)" tabindex="0" data-tip-title="ISMS · Medium" data-tip-val="33 risks" data-tip-lab="40.7% of ISMS register"></div>
+          <div class="profile-seg" style="width:54.32%;background:var(--good)" tabindex="0" data-tip-title="ISMS · Low" data-tip-val="44 risks" data-tip-lab="54.3% of ISMS register"></div>
+        </div>
+      </div>
+      <div class="axis-pct">
+        <span></span>
+        <div class="scale"><span style="left:0%">0%</span><span style="left:25%">25%</span><span style="left:50%">50%</span><span style="left:75%">75%</span><span style="left:100%">100%</span></div>
+      </div>
+    </div>
+
+    <div class="data-table table-scroll" id="ex1-table" hidden>
+      <table>
+        <thead><tr><th>Priority</th><th class="num">BCMS</th><th class="num">ISMS</th><th class="num">Combined</th><th class="num">% of total</th></tr></thead>
+        <tbody>
+          <tr><td>Critical</td><td class="num">5</td><td class="num">0</td><td class="num">5</td><td class="num">5.2%</td></tr>
+          <tr><td>High</td><td class="num">0</td><td class="num">4</td><td class="num">4</td><td class="num">4.1%</td></tr>
+          <tr><td>Medium</td><td class="num">5</td><td class="num">33</td><td class="num">38</td><td class="num">39.2%</td></tr>
+          <tr><td>Low</td><td class="num">5</td><td class="num">44</td><td class="num">49</td><td class="num">50.5%</td></tr>
+          <tr><td>Not rated (blank in source)</td><td class="num">1</td><td class="num">0</td><td class="num">1</td><td class="num">1.0%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- EXHIBIT 2 -->
+  <section class="exhibit" id="ex2">
+    <div class="exhibit-head">
+      <div class="exhibit-title-block">
+        <p class="eyebrow">Exhibit 2</p>
+        <h2>Top risks — inherent vs. residual score</h2>
+        <p class="finding">The twelve highest inherent scores, ranked, showing how far existing controls pull each one down. Three (marked) still land above Low residual — see Exhibit&nbsp;3.</p>
+      </div>
+      <button class="toggle-table" data-target="ex2">View data table</button>
+    </div>
+
+    <div class="legend" aria-hidden="true">
+      <span class="item"><span class="sw dot" style="background:var(--accent-strong)"></span>Inherent (before controls)</span>
+      <span class="item"><span class="sw dot" style="background:var(--accent-soft)"></span>Residual (after controls)</span>
+    </div>
+
+    <div class="viz table-scroll" id="ex2-viz">
+      <div class="dumbbell" style="min-width:620px">
+        <div class="db-axis">
+          <span></span>
+          <div class="scale"><i style="left:0%">0</i><i style="left:15.38%">2</i><i style="left:30.77%">4</i><i style="left:46.15%">6</i><i style="left:61.54%">8</i><i style="left:76.92%">10</i><i style="left:92.31%">12</i></div>
+          <span></span>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">DevOps development environment</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="DevOps development environment" data-tip-val="12 → 8" data-tip-lab="Not replicated to DR site — Medium residual" tabindex="0">
+            <div class="db-line" style="left:61.54%;width:30.77%"></div>
+            <div class="db-dot inherent" style="left:92.31%"></div>
+            <div class="db-dot residual" style="left:61.54%"></div>
+          </div>
+          <div class="db-score"><b>12</b> → 8</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">SQL platform (ERP, eHRMS, Portal)</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="SQL platform" data-tip-val="10 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:46.15%"></div>
+            <div class="db-dot inherent" style="left:76.92%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>10</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Branch connectivity routers</span><div class="meta">Network Administrator</div></div>
+          <div class="db-track" data-tip-title="Branch connectivity routers" data-tip-val="10 → 3" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:23.08%;width:53.85%"></div>
+            <div class="db-dot inherent" style="left:76.92%"></div>
+            <div class="db-dot residual" style="left:23.08%"></div>
+          </div>
+          <div class="db-score"><b>10</b> → 3</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">DR server (SQL / Email / File replication)</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="DR server replication" data-tip-val="10 → 6" data-tip-lab="Undersized capacity — Medium residual" tabindex="0">
+            <div class="db-line" style="left:46.15%;width:30.77%"></div>
+            <div class="db-dot inherent" style="left:76.92%"></div>
+            <div class="db-dot residual" style="left:46.15%"></div>
+          </div>
+          <div class="db-score"><b>10</b> → 6</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">BCMS</span><span class="name">Critical ICT systems — main datacenter</span><div class="meta">IT Management</div></div>
+          <div class="db-track" data-tip-title="Critical ICT systems" data-tip-val="9 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:38.46%"></div>
+            <div class="db-dot inherent" style="left:69.23%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>9</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Information security compliance</span><div class="meta">IT &amp; IS Manager</div></div>
+          <div class="db-track" data-tip-title="Information security compliance" data-tip-val="9 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:38.46%"></div>
+            <div class="db-dot inherent" style="left:69.23%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>9</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Employee device security (eHRMS)</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="Employee device security" data-tip-val="8 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:30.77%"></div>
+            <div class="db-dot inherent" style="left:61.54%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>8</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Email (Exchange) availability</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="Email availability" data-tip-val="8 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:30.77%"></div>
+            <div class="db-dot inherent" style="left:61.54%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>8</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">ERP application availability</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="ERP availability" data-tip-val="8 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:30.77%"></div>
+            <div class="db-dot inherent" style="left:61.54%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>8</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Domain controller (PDC) access</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="Domain controller" data-tip-val="8 → 4" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:30.77%;width:30.77%"></div>
+            <div class="db-dot inherent" style="left:61.54%"></div>
+            <div class="db-dot residual" style="left:30.77%"></div>
+          </div>
+          <div class="db-score"><b>8</b> → 4</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Company website security</span><div class="meta">System Administrator</div></div>
+          <div class="db-track" data-tip-title="Website security" data-tip-val="8 → 2" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:15.38%;width:46.15%"></div>
+            <div class="db-dot inherent" style="left:61.54%"></div>
+            <div class="db-dot residual" style="left:15.38%"></div>
+          </div>
+          <div class="db-score"><b>8</b> → 2</div>
+        </div>
+
+        <div class="db-row">
+          <div class="db-label"><span class="tag">ISMS</span><span class="name">Voice / telephony connectivity</span><div class="meta">Network Administrator</div></div>
+          <div class="db-track" data-tip-title="Voice connectivity" data-tip-val="8 → 3" data-tip-lab="Residual reduced to Low" tabindex="0">
+            <div class="db-line" style="left:23.08%;width:38.46%"></div>
+            <div class="db-dot inherent" style="left:61.54%"></div>
+            <div class="db-dot residual" style="left:23.08%"></div>
+          </div>
+          <div class="db-score"><b>8</b> → 3</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-table table-scroll" id="ex2-table" hidden>
+      <table>
+        <thead><tr><th>Source</th><th>Risk / scenario</th><th class="num">Inherent</th><th>Priority</th><th class="num">Residual</th><th>Priority</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>ISMS</td><td>Development activities impaired, DevOps records unavailable</td><td class="num">12</td><td>High</td><td class="num">8</td><td>Medium</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>SQL failure impairs ERP, eHRMS and Portal</td><td class="num">10</td><td>High</td><td class="num">4</td><td>Low</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>Branch connectivity router failure</td><td class="num">10</td><td>High</td><td class="num">3</td><td>Low</td><td>Network Administrator</td></tr>
+          <tr><td>ISMS</td><td>DR server — SQL / Email / Fileserver replication impaired</td><td class="num">10</td><td>High</td><td class="num">6</td><td>Medium</td><td>System Administrator</td></tr>
+          <tr><td>BCMS</td><td>Critical ICT systems failure / outage — main datacenter</td><td class="num">9</td><td>Medium</td><td class="num">4</td><td>Low</td><td>IT Management</td></tr>
+          <tr><td>ISMS</td><td>Failure to comply with current/future information security rules</td><td class="num">9</td><td>Medium</td><td class="num">4</td><td>Low</td><td>IT &amp; IS Manager</td></tr>
+          <tr><td>ISMS</td><td>Device failure/loss exposing sensitive employee information</td><td class="num">8</td><td>Medium</td><td class="num">4</td><td>Low</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>Email down or inaccessible</td><td class="num">8</td><td>Medium</td><td class="num">4</td><td>Low</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>ERP down or corrupted</td><td class="num">8</td><td>Medium</td><td class="num">4</td><td>Low</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>Network resource / domain controller failure</td><td class="num">8</td><td>Medium</td><td class="num">4</td><td>Low</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>System down or unauthorized access / security breach</td><td class="num">8</td><td>Medium</td><td class="num">2</td><td>Low</td><td>System Administrator</td></tr>
+          <tr><td>ISMS</td><td>Voice connectivity — incoming/outgoing calls impaired</td><td class="num">8</td><td>Medium</td><td class="num">3</td><td>Low</td><td>Network Administrator</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- EXHIBIT 3 -->
+  <section class="exhibit" id="ex3">
+    <p class="eyebrow">Exhibit 3</p>
+    <h2>Controls not yet effective — residual still Medium</h2>
+    <p class="finding">Three risks remain above Low after existing controls are applied. These are the specific gaps standing between the register and an all-Low residual position (Recommendation&nbsp;1).</p>
+
+    <div class="alert-grid">
+      <div class="alert-card">
+        <div class="scoreline"><span class="from">12</span><span class="arrow">→</span><span class="to">8</span></div>
+        <span class="pill">Medium residual</span>
+        <p>DevOps development environment is not yet replicated to the DR site — a single-site dependency for development records and activity.</p>
+        <div class="owner">Owner: System Administrator</div>
+      </div>
+      <div class="alert-card">
+        <div class="scoreline"><span class="from">10</span><span class="arrow">→</span><span class="to">6</span></div>
+        <span class="pill">Medium residual</span>
+        <p>DR server hardware is undersized (disk and memory) for SQL / Email / Fileserver replication load — capacity, not redundancy, is the gap.</p>
+        <div class="owner">Owner: System Administrator</div>
+      </div>
+      <div class="alert-card">
+        <div class="scoreline"><span class="from">8</span><span class="arrow">→</span><span class="to">6</span></div>
+        <span class="pill">Medium residual</span>
+        <p>Branch bandwidth optimizer has no redundancy — a link-performance failure currently has no automatic failover path.</p>
+        <div class="owner">Owner: Network Administrator</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXHIBIT 4 + 5 -->
+  <div class="two-col">
+    <section class="exhibit" id="ex4">
+      <div class="exhibit-head">
+        <div class="exhibit-title-block">
+          <p class="eyebrow">Exhibit 4</p>
+          <h2>ISMS risk by asset category</h2>
+          <p class="finding"><b>Systems, applications &amp; databases</b> alone carries 51% of all ISMS risk volume.</p>
+        </div>
+      </div>
+      <button class="toggle-table" data-target="ex4" style="margin-bottom:16px;">View data table</button>
+
+      <div class="viz" id="ex4-viz">
+        <div class="rank-row"><div class="rlabel">Systems, applications &amp; databases</div><div class="rank-track"><div class="rank-fill" style="width:100%" tabindex="0" data-tip-title="Systems, applications &amp; databases" data-tip-val="41 risks" data-tip-lab="50.6% of ISMS register"></div></div><div class="rank-val">41<span class="pct">50.6%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Documentation (paper &amp; electronic)</div><div class="rank-track"><div class="rank-fill" style="width:21.95%" tabindex="0" data-tip-title="Documentation" data-tip-val="9 risks" data-tip-lab="11.1% of ISMS register"></div></div><div class="rank-val">9<span class="pct">11.1%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Strategic risks (external &amp; internal)</div><div class="rank-track"><div class="rank-fill" style="width:17.07%" tabindex="0" data-tip-title="Strategic risks" data-tip-val="7 risks" data-tip-lab="8.6% of ISMS register"></div></div><div class="rank-val">7<span class="pct">8.6%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Computers &amp; other equipment</div><div class="rank-track"><div class="rank-fill" style="width:14.63%" tabindex="0" data-tip-title="Computers &amp; other equipment" data-tip-val="6 risks" data-tip-lab="7.4% of ISMS register"></div></div><div class="rank-val">6<span class="pct">7.4%</span></div></div>
+        <div class="rank-row"><div class="rlabel">People / department</div><div class="rank-track"><div class="rank-fill" style="width:14.63%" tabindex="0" data-tip-title="People / department" data-tip-val="6 risks" data-tip-lab="7.4% of ISMS register"></div></div><div class="rank-val">6<span class="pct">7.4%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Cybersecurity risks</div><div class="rank-track"><div class="rank-fill" style="width:14.63%" tabindex="0" data-tip-title="Cybersecurity risks" data-tip-val="6 risks" data-tip-lab="7.4% of ISMS register"></div></div><div class="rank-val">6<span class="pct">7.4%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Infrastructure, facilities &amp; security</div><div class="rank-track"><div class="rank-fill" style="width:7.32%" tabindex="0" data-tip-title="Infrastructure, facilities &amp; security" data-tip-val="3 risks" data-tip-lab="3.7% of ISMS register"></div></div><div class="rank-val">3<span class="pct">3.7%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Outsourced services</div><div class="rank-track"><div class="rank-fill" style="width:7.32%" tabindex="0" data-tip-title="Outsourced services" data-tip-val="3 risks" data-tip-lab="3.7% of ISMS register"></div></div><div class="rank-val">3<span class="pct">3.7%</span></div></div>
+      </div>
+
+      <div class="data-table table-scroll" id="ex4-table" hidden>
+        <table>
+          <thead><tr><th>Asset category</th><th class="num">Risk count</th><th class="num">% of ISMS</th></tr></thead>
+          <tbody>
+            <tr><td>Systems, Applications and Databases</td><td class="num">41</td><td class="num">50.6%</td></tr>
+            <tr><td>Documentation (paper or electronic)</td><td class="num">9</td><td class="num">11.1%</td></tr>
+            <tr><td>Strategic Risks (external and internal issues)</td><td class="num">7</td><td class="num">8.6%</td></tr>
+            <tr><td>Computers and other equipment</td><td class="num">6</td><td class="num">7.4%</td></tr>
+            <tr><td>People / department</td><td class="num">6</td><td class="num">7.4%</td></tr>
+            <tr><td>Cybersecurity risks</td><td class="num">6</td><td class="num">7.4%</td></tr>
+            <tr><td>Infrastructure, facilities and security</td><td class="num">3</td><td class="num">3.7%</td></tr>
+            <tr><td>Outsourced services</td><td class="num">3</td><td class="num">3.7%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="exhibit" id="ex5">
+      <div class="exhibit-head">
+        <div class="exhibit-title-block">
+          <p class="eyebrow">Exhibit 5</p>
+          <h2>Risk ownership concentration</h2>
+          <p class="finding">System Administrator + Network Administrator own <b>43 of 97 risks (44%)</b> — a key-person dependency (Recommendation&nbsp;3).</p>
+        </div>
+      </div>
+      <button class="toggle-table" data-target="ex5" style="margin-bottom:16px;">View data table</button>
+
+      <div class="viz" id="ex5-viz">
+        <div class="rank-row"><div class="rlabel">System Administrator</div><div class="rank-track"><div class="rank-fill" style="width:67.6%" tabindex="0" data-tip-title="System Administrator" data-tip-val="23 risks" data-tip-lab="23.7% of all risks"></div></div><div class="rank-val">23<span class="pct">23.7%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Network Administrator</div><div class="rank-track"><div class="rank-fill" style="width:58.8%" tabindex="0" data-tip-title="Network Administrator" data-tip-val="20 risks" data-tip-lab="20.6% of all risks"></div></div><div class="rank-val">20<span class="pct">20.6%</span></div></div>
+        <div class="rank-row"><div class="rlabel">IT Management</div><div class="rank-track"><div class="rank-fill" style="width:29.4%" tabindex="0" data-tip-title="IT Management" data-tip-val="10 risks" data-tip-lab="10.3% of all risks"></div></div><div class="rank-val">10<span class="pct">10.3%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Administration Manager</div><div class="rank-track"><div class="rank-fill" style="width:5.9%" tabindex="0" data-tip-title="Administration Manager" data-tip-val="2 risks" data-tip-lab="2.1% of all risks"></div></div><div class="rank-val">2<span class="pct">2.1%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Administration</div><div class="rank-track"><div class="rank-fill" style="width:5.9%" tabindex="0" data-tip-title="Administration" data-tip-val="2 risks" data-tip-lab="2.1% of all risks"></div></div><div class="rank-val">2<span class="pct">2.1%</span></div></div>
+        <div class="rank-row"><div class="rlabel">IT, All Users</div><div class="rank-track"><div class="rank-fill" style="width:5.9%" tabindex="0" data-tip-title="IT, All Users" data-tip-val="2 risks" data-tip-lab="2.1% of all risks"></div></div><div class="rank-val">2<span class="pct">2.1%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Finance Mgt.</div><div class="rank-track"><div class="rank-fill" style="width:5.9%" tabindex="0" data-tip-title="Finance Mgt." data-tip-val="2 risks" data-tip-lab="2.1% of all risks"></div></div><div class="rank-val">2<span class="pct">2.1%</span></div></div>
+        <div class="rank-row"><div class="rlabel">Head of affected department</div><div class="rank-track"><div class="rank-fill" style="width:5.9%" tabindex="0" data-tip-title="Head of affected department" data-tip-val="2 risks" data-tip-lab="2.1% of all risks"></div></div><div class="rank-val">2<span class="pct">2.1%</span></div></div>
+        <div class="rank-row other"><div class="rlabel">All other owners</div><div class="rank-track"><div class="rank-fill muted" style="width:100%" tabindex="0" data-tip-title="All other owners" data-tip-val="34 risks" data-tip-lab="35.1% — not individually broken out in source summary"></div></div><div class="rank-val">34<span class="pct">35.1%</span></div></div>
+      </div>
+
+      <div class="data-table table-scroll" id="ex5-table" hidden>
+        <table>
+          <thead><tr><th>Owner / responsible</th><th class="num">Risk count</th><th class="num">% of total</th></tr></thead>
+          <tbody>
+            <tr><td>System Administrator</td><td class="num">23</td><td class="num">23.7%</td></tr>
+            <tr><td>Network Administrator</td><td class="num">20</td><td class="num">20.6%</td></tr>
+            <tr><td>IT Management</td><td class="num">10</td><td class="num">10.3%</td></tr>
+            <tr><td>Administration Manager</td><td class="num">2</td><td class="num">2.1%</td></tr>
+            <tr><td>Administration</td><td class="num">2</td><td class="num">2.1%</td></tr>
+            <tr><td>IT, All Users</td><td class="num">2</td><td class="num">2.1%</td></tr>
+            <tr><td>Finance Mgt.</td><td class="num">2</td><td class="num">2.1%</td></tr>
+            <tr><td>Head of affected department</td><td class="num">2</td><td class="num">2.1%</td></tr>
+            <tr><td>All other owners (not individually listed)</td><td class="num">34</td><td class="num">35.1%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- RECOMMENDATIONS -->
+  <section class="exhibit" id="ex6">
+    <p class="eyebrow">Exhibit 6</p>
+    <h2>Recommended actions for management</h2>
+    <div class="rec-list">
+      <div class="rec">
+        <div class="num">1</div>
+        <div><h3>Close the three remaining Medium-residual ISMS risks</h3><p>DevOps DR replication, DR server capacity, and branch link redundancy are the last controls standing between the register and an all-Low residual position.</p></div>
+      </div>
+      <div class="rec">
+        <div class="num">2</div>
+        <div><h3>Re-baseline the five BCMS "Critical" ratings</h3><p>Confirm them against the numeric Consequence × Likelihood scale so BCMS and ISMS priorities are directly comparable in future combined reports.</p></div>
+      </div>
+      <div class="rec">
+        <div class="num">3</div>
+        <div><h3>Review key-person / succession risk</h3><p>System Administrator and Network Administrator together carry 44% of all logged BCMS + ISMS risk — both a single point of accountability and a key-person dependency for treatment.</p></div>
+      </div>
+      <div class="rec">
+        <div class="num">4</div>
+        <div><h3>Prioritize "Systems, Applications and Databases" for the next control-investment cycle</h3><p>This category alone accounts for 51% of ISMS risk volume — the highest-leverage area for further control spend.</p></div>
+      </div>
+      <div class="rec">
+        <div class="num">5</div>
+        <div><h3>Rate the one unrated BCMS scenario</h3><p>One BCMS risk has no priority rating in the source register — obtain a rating before the next reporting cycle so totals are complete.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Source: <em>Combined_Risk_Summary_2025-BCMS_ISMS with management summary.xlsx</em> — Management Summary, Combined Summary, BCMS Summary and ISMS Summary tabs. BCMS and ISMS registers use harmonized column definitions (see Column Mapping tab). Risk scored as Consequence × Likelihood (Inherent), reassessed after existing controls (Residual). Percentages rounded to one decimal. Dashboard generated 22 July 2026.
+  </footer>
+
+</div>
+
+<div id="tooltip" role="tooltip"></div>
+
+<script>
+(function(){
+  var tip = document.getElementById('tooltip');
+  var active = null;
+
+  function contentFor(el){
+    var title = el.getAttribute('data-tip-title') || '';
+    var val = el.getAttribute('data-tip-val') || '';
+    var lab = el.getAttribute('data-tip-lab') || '';
+    tip.innerHTML = '';
+    var t = document.createElement('div');
+    t.className = 't-title';
+    t.textContent = title;
+    var v = document.createElement('div');
+    v.className = 't-val';
+    v.textContent = val;
+    var l = document.createElement('div');
+    l.className = 't-lab';
+    l.textContent = lab;
+    tip.appendChild(t); tip.appendChild(v); tip.appendChild(l);
+  }
+
+  function place(x, y){
+    var pad = 14;
+    var r = tip.getBoundingClientRect();
+    var left = x + pad;
+    var top = y + pad;
+    if (left + r.width > window.innerWidth - 8) left = x - r.width - pad;
+    if (top + r.height > window.innerHeight - 8) top = y - r.height - pad;
+    tip.style.left = Math.max(8,left) + 'px';
+    tip.style.top = Math.max(8,top) + 'px';
+  }
+
+  function showAt(el, x, y){
+    contentFor(el);
+    tip.classList.add('show');
+    place(x, y);
+    active = el;
+  }
+  function hide(){ tip.classList.remove('show'); active = null; }
+
+  var targets = document.querySelectorAll('[data-tip-title]');
+  targets.forEach(function(el){
+    el.addEventListener('pointerenter', function(e){ showAt(el, e.clientX, e.clientY); });
+    el.addEventListener('pointermove', function(e){ if(active===el) place(e.clientX, e.clientY); });
+    el.addEventListener('pointerleave', hide);
+    el.addEventListener('focus', function(){
+      var r = el.getBoundingClientRect();
+      showAt(el, r.left + r.width/2, r.top);
+    });
+    el.addEventListener('blur', hide);
+  });
+
+  document.querySelectorAll('.toggle-table').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.getAttribute('data-target');
+      var viz = document.getElementById(id + '-viz');
+      var table = document.getElementById(id + '-table');
+      var showingTable = !table.hidden;
+      table.hidden = showingTable;
+      viz.hidden = !showingTable;
+      btn.textContent = showingTable ? 'View data table' : 'View chart';
+      btn.setAttribute('aria-pressed', String(!showingTable));
+    });
+  });
+})();
+</script>
