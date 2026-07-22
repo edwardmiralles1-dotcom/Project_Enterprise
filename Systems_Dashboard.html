@@ -1,0 +1,741 @@
+<title>Systems Dashboard — Edward Miralles</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page-bg: #e7e2da;
+    --card-bg: #faf7f2;
+    --card-border: rgba(26,20,13,0.10);
+    --ink-primary: #1c1712;
+    --ink-secondary: #6b6053;
+    --ink-muted: #948a7c;
+    --grid-line: #e2dbcf;
+    --baseline: #c9beaf;
+    --accent: #2a78d6;
+    --accent-wash: rgba(42,120,214,0.11);
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-critical: #d03b3b;
+    --success-text: #006300;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page-bg: #080604;
+      --card-bg: #1b1712;
+      --card-border: rgba(247,238,225,0.09);
+      --ink-primary: #f7eee1;
+      --ink-secondary: #c9bfaf;
+      --ink-muted: #8f8474;
+      --grid-line: #2c261e;
+      --baseline: #3c342a;
+      --accent: #3987e5;
+      --accent-wash: rgba(57,135,229,0.16);
+      --status-good: #0ca30c;
+      --status-warning: #fab219;
+      --status-critical: #e66767;
+      --success-text: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page-bg: #080604;
+    --card-bg: #1b1712;
+    --card-border: rgba(247,238,225,0.09);
+    --ink-primary: #f7eee1;
+    --ink-secondary: #c9bfaf;
+    --ink-muted: #8f8474;
+    --grid-line: #2c261e;
+    --baseline: #3c342a;
+    --accent: #3987e5;
+    --accent-wash: rgba(57,135,229,0.16);
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-critical: #e66767;
+    --success-text: #0ca30c;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page-bg: #e7e2da;
+    --card-bg: #faf7f2;
+    --card-border: rgba(26,20,13,0.10);
+    --ink-primary: #1c1712;
+    --ink-secondary: #6b6053;
+    --ink-muted: #948a7c;
+    --grid-line: #e2dbcf;
+    --baseline: #c9beaf;
+    --accent: #2a78d6;
+    --accent-wash: rgba(42,120,214,0.11);
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-critical: #d03b3b;
+    --success-text: #006300;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--page-bg); }
+  .dash {
+    font-family: var(--font-sans);
+    color: var(--ink-primary);
+    background: var(--page-bg);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .dash :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px 20px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 8px;
+    border: 1.5px solid var(--accent);
+    background: var(--card-bg);
+    color: var(--accent);
+    font-weight: 700; font-size: 13px; letter-spacing: 0.02em;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.25; }
+  .brand-name { font-size: 14.5px; font-weight: 600; }
+  .brand-sub { font-size: 11.5px; color: var(--ink-secondary); }
+
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px; border-radius: 20px;
+    font-size: 12.5px; font-weight: 600; color: var(--ink-secondary);
+    border: 1px solid var(--card-border);
+  }
+  .status-chip.good { background: color-mix(in srgb, var(--status-good) 14%, var(--card-bg)); }
+  .status-chip.warning { background: color-mix(in srgb, var(--status-warning) 16%, var(--card-bg)); }
+  .status-chip.critical { background: color-mix(in srgb, var(--status-critical) 14%, var(--card-bg)); }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .status-chip.good .status-dot { background: var(--status-good); }
+  .status-chip.warning .status-dot { background: var(--status-warning); }
+  .status-chip.critical .status-dot { background: var(--status-critical); }
+  @media (prefers-reduced-motion: no-preference) {
+    .status-chip.good .status-dot { animation: pulse 2.4s ease-in-out infinite; }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-good) 45%, transparent); }
+    50% { box-shadow: 0 0 0 4px transparent; }
+  }
+
+  .range-filter { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--card-border); border-radius: 9px; background: var(--card-bg); }
+  .range-filter button {
+    border: none; background: transparent; color: var(--ink-secondary);
+    font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 6px;
+  }
+  .range-filter button.active { background: var(--accent); color: #fff; }
+  .range-filter button:not(.active):hover { background: color-mix(in srgb, var(--ink-primary) 6%, transparent); }
+
+  .updated { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+  .updated span { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-secondary); }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 18px 20px 20px;
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .card-head h2 { font-size: 14.5px; font-weight: 600; margin: 0; }
+
+  /* ---------- KPI row ---------- */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat-tile {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; position: relative;
+  }
+  .stat-label { font-size: 12.5px; color: var(--ink-secondary); }
+  .stat-value { font-size: 27px; font-weight: 650; letter-spacing: -0.01em; }
+  .stat-delta { font-size: 12px; font-weight: 600; }
+  .stat-delta.good { color: var(--success-text); }
+  .stat-delta.bad { color: var(--status-critical); }
+  .stat-spark { width: 100%; height: 30px; margin-top: 2px; overflow: visible; }
+  .spark-line { fill: none; stroke: var(--ink-muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .spark-dot { fill: var(--accent); }
+
+  /* ---------- main grid ---------- */
+  .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+
+  .metric-tabs { display: flex; gap: 4px; }
+  .metric-tabs button {
+    border: 1px solid var(--card-border); background: transparent; color: var(--ink-secondary);
+    font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 7px;
+  }
+  .metric-tabs button.active { background: var(--accent-wash); border-color: var(--accent); color: var(--accent); }
+
+  .table-toggle {
+    border: 1px solid var(--card-border); background: transparent; color: var(--ink-secondary);
+    font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 7px;
+  }
+  .table-toggle:hover { color: var(--ink-primary); border-color: var(--ink-muted); }
+
+  .chart-scroll { overflow-x: auto; }
+  .chart-wrap { position: relative; min-width: 480px; }
+  .chart-wrap:focus-visible { outline-offset: 4px; }
+  #trend-svg { width: 100%; height: auto; display: block; }
+  .grid-line { stroke: var(--grid-line); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+  .tick-label { fill: var(--ink-muted); font-size: 10.5px; font-family: var(--font-mono); }
+  .area-fill { fill: var(--accent-wash); stroke: none; }
+  .line-stroke { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .end-marker { fill: var(--accent); stroke: var(--card-bg); stroke-width: 2; }
+  .crosshair-line { stroke: var(--baseline); stroke-width: 1; }
+  .crosshair-dot { fill: var(--accent); stroke: var(--card-bg); stroke-width: 2; }
+
+  .chart-tooltip {
+    position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none;
+    transform: translate(-50%, -115%);
+    background: var(--ink-primary); color: var(--card-bg);
+    border-radius: 7px; padding: 7px 10px; font-size: 12px; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  }
+  .tt-value { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tt-label { font-size: 11px; opacity: 0.75; margin-top: 1px; font-family: var(--font-mono); }
+
+  .data-table-wrap { margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 12px; max-height: 220px; overflow-y: auto; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .data-table th, .data-table td { text-align: left; padding: 5px 10px; }
+  .data-table th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .data-table td { font-family: var(--font-mono); font-variant-numeric: tabular-nums; border-top: 1px solid var(--grid-line); }
+
+  /* ---------- services ---------- */
+  .service-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .service-row {
+    display: grid; grid-template-columns: 1fr auto 64px auto; align-items: center; gap: 12px;
+    padding: 9px 2px; border-top: 1px solid var(--grid-line);
+  }
+  .service-row:first-child { border-top: none; }
+  .service-name { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-primary); }
+  .service-spark { width: 64px; height: 24px; overflow: visible; }
+  .service-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--ink-secondary); text-align: right; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--ink-secondary); white-space: nowrap; }
+  .status-pill.sm { font-size: 11.5px; }
+  .pill-icon { display: inline-flex; }
+  .status-pill.good .pill-icon { color: var(--status-good); }
+  .status-pill.warning .pill-icon { color: var(--status-warning); }
+  .status-pill.critical .pill-icon { color: var(--status-critical); }
+
+  /* ---------- events ---------- */
+  .events-table-wrap { overflow-x: auto; }
+  .events-table th, .events-table td { padding: 8px 12px; font-size: 13px; }
+  .events-table th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; text-align: left; }
+  .events-table td { border-top: 1px solid var(--grid-line); vertical-align: middle; }
+  .events-table td.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-secondary); white-space: nowrap; }
+
+  .dash-footer { text-align: center; font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; }
+
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .service-row { grid-template-columns: 1fr auto; row-gap: 6px; }
+    .service-spark, .service-value { display: none; }
+  }
+</style>
+
+<div class="dash">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">EM</span>
+      <div class="brand-text">
+        <span class="brand-name">Edward Miralles</span>
+        <span class="brand-sub">Systems dashboard</span>
+      </div>
+    </div>
+    <div class="status-chip good" id="status-chip">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="status-chip-label">All systems operational</span>
+    </div>
+    <div class="range-filter" aria-label="Time range">
+      <button type="button" data-range="60m" aria-pressed="false">60m</button>
+      <button type="button" data-range="24h" aria-pressed="true" class="active">24h</button>
+      <button type="button" data-range="7d" aria-pressed="false">7d</button>
+      <button type="button" data-range="30d" aria-pressed="false">30d</button>
+    </div>
+    <div class="updated">Updated <span id="updated-time">—</span></div>
+  </header>
+
+  <section class="kpi-row" aria-label="Key metrics">
+    <div class="stat-tile">
+      <span class="stat-label">Uptime</span>
+      <span class="stat-value" id="kpi-uptime-value">—</span>
+      <span class="stat-delta" id="kpi-uptime-delta"></span>
+      <svg class="stat-spark" id="kpi-uptime-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Avg response time</span>
+      <span class="stat-value" id="kpi-latency-value">—</span>
+      <span class="stat-delta" id="kpi-latency-delta"></span>
+      <svg class="stat-spark" id="kpi-latency-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Requests</span>
+      <span class="stat-value" id="kpi-requests-value">—</span>
+      <span class="stat-delta" id="kpi-requests-delta"></span>
+      <svg class="stat-spark" id="kpi-requests-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Error rate</span>
+      <span class="stat-value" id="kpi-errors-value">—</span>
+      <span class="stat-delta" id="kpi-errors-delta"></span>
+      <svg class="stat-spark" id="kpi-errors-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+  </section>
+
+  <section class="main-grid">
+    <div class="card chart-card">
+      <div class="card-head">
+        <div class="metric-tabs" aria-label="Metric">
+          <button type="button" data-metric="latency" class="active" aria-pressed="true">p95 latency</button>
+          <button type="button" data-metric="traffic" aria-pressed="false">Requests</button>
+        </div>
+        <button type="button" class="table-toggle" id="table-toggle" aria-expanded="false">View as table</button>
+      </div>
+      <div class="chart-scroll">
+        <div class="chart-wrap" id="chart-wrap" tabindex="0" role="img" aria-label="Trend chart, use arrow keys to inspect values">
+          <svg id="trend-svg" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+        </div>
+      </div>
+      <div class="data-table-wrap" id="data-table-wrap" hidden>
+        <table class="data-table">
+          <thead><tr><th>Time</th><th id="dt-th-value">Value</th></tr></thead>
+          <tbody id="data-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card services-card">
+      <div class="card-head"><h2>Services</h2></div>
+      <ul class="service-list" id="service-list"></ul>
+    </div>
+  </section>
+
+  <section class="card events-card">
+    <div class="card-head"><h2>Recent events</h2></div>
+    <div class="events-table-wrap">
+      <table class="events-table">
+        <thead><tr><th>When</th><th>Service</th><th>Severity</th><th>Event</th></tr></thead>
+        <tbody id="events-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="dash-footer">Mock data shown for demonstration · Edward Miralles</footer>
+</div>
+
+<script>
+(function () {
+  var svgNS = 'http://www.w3.org/2000/svg';
+
+  function el(name, attrs) {
+    var e = document.createElementNS(svgNS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function genSeries(n, base, amp, noiseAmp, seed, trend) {
+    trend = trend || 0;
+    var rand = mulberry32(seed);
+    var arr = [];
+    for (var i = 0; i < n; i++) {
+      var frac = i / Math.max(n - 1, 1);
+      var wave = Math.sin(frac * Math.PI * 2) * amp;
+      var noise = (rand() - 0.5) * 2 * noiseAmp;
+      var trendAdj = trend * frac;
+      arr.push(Math.max(1, Math.round(base + wave + noise + trendAdj)));
+    }
+    return arr;
+  }
+
+  function niceStep(rough) {
+    if (!isFinite(rough) || rough <= 0) return 1;
+    var exp = Math.floor(Math.log10(rough));
+    var base = Math.pow(10, exp);
+    var frac = rough / base;
+    var niceFrac = frac < 1.5 ? 1 : frac < 3 ? 2 : frac < 7 ? 5 : 10;
+    return niceFrac * base;
+  }
+
+  function fmtComma(n) { return Math.round(n).toLocaleString('en-US'); }
+  function fmtCompact(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Math.round(n).toString();
+  }
+
+  function labelsFor(range, n) {
+    var now = new Date();
+    var labels = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(now);
+      if (range === '60m') d.setMinutes(d.getMinutes() - i * 2);
+      else if (range === '24h') d.setHours(d.getHours() - i);
+      else d.setDate(d.getDate() - i);
+
+      if (range === '60m' || range === '24h') {
+        labels.push(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } else if (range === '7d') {
+        labels.push(d.toLocaleDateString([], { weekday: 'short' }));
+      } else {
+        labels.push(d.toLocaleDateString([], { month: 'short', day: 'numeric' }));
+      }
+    }
+    return labels;
+  }
+
+  var RANGE_CONFIG = {
+    '60m': {
+      n: 30,
+      latency: { base: 196, amp: 10, noise: 12, seed: 11, trend: 0, spikeIndex: 22, spikeAdd: 130 },
+      traffic: { base: 6700, amp: 900, noise: 500, seed: 211, trend: 0 },
+      uptime: 99.99, uptimePrior: 99.98, errorRate: 0.06, errorRatePrior: 0.09
+    },
+    '24h': {
+      n: 24,
+      latency: { base: 205, amp: 34, noise: 9, seed: 22, trend: 0 },
+      traffic: { base: 198000, amp: 95000, noise: 9000, seed: 222, trend: 0 },
+      uptime: 99.97, uptimePrior: 99.95, errorRate: 0.084, errorRatePrior: 0.11
+    },
+    '7d': {
+      n: 7,
+      latency: { base: 214, amp: 9, noise: 7, seed: 33, trend: -9 },
+      traffic: { base: 4650000, amp: 850000, noise: 120000, seed: 233, trend: 180000 },
+      uptime: 99.95, uptimePrior: 99.93, errorRate: 0.10, errorRatePrior: 0.13
+    },
+    '30d': {
+      n: 30,
+      latency: { base: 232, amp: 11, noise: 9, seed: 44, trend: -42 },
+      traffic: { base: 4450000, amp: 400000, noise: 180000, seed: 244, trend: 520000 },
+      uptime: 99.97, uptimePrior: 99.90, errorRate: 0.084, errorRatePrior: 0.15
+    }
+  };
+
+  function buildRangeData(key) {
+    var cfg = RANGE_CONFIG[key];
+    var latency = genSeries(cfg.n, cfg.latency.base, cfg.latency.amp, cfg.latency.noise, cfg.latency.seed, cfg.latency.trend);
+    if (cfg.latency.spikeIndex != null) latency[cfg.latency.spikeIndex] += cfg.latency.spikeAdd;
+    var traffic = genSeries(cfg.n, cfg.traffic.base, cfg.traffic.amp, cfg.traffic.noise, cfg.traffic.seed, cfg.traffic.trend);
+    var labels = labelsFor(key, cfg.n);
+    var avgLatency = Math.round(latency.reduce(function (a, b) { return a + b; }, 0) / latency.length);
+    var totalRequests = traffic.reduce(function (a, b) { return a + b; }, 0);
+    return { latency: latency, traffic: traffic, labels: labels, avgLatency: avgLatency, totalRequests: totalRequests, cfg: cfg };
+  }
+
+  function fillSparkline(svgEl, values) {
+    while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+    var n = values.length;
+    var max = Math.max.apply(null, values.concat([1]));
+    var min = Math.min.apply(null, values.concat([0]));
+    var range = (max - min) || 1;
+    var xAt = function (i) { return (i / Math.max(n - 1, 1)) * 100; };
+    var yAt = function (v) { return 24 - ((v - min) / range) * 20; };
+    var d = 'M ' + xAt(0) + ' ' + yAt(values[0]);
+    for (var i = 1; i < n; i++) d += ' L ' + xAt(i) + ' ' + yAt(values[i]);
+    svgEl.appendChild(el('path', { d: d, class: 'spark-line' }));
+    svgEl.appendChild(el('circle', { cx: xAt(n - 1), cy: yAt(values[n - 1]), r: 2.4, class: 'spark-dot' }));
+  }
+
+  function deltaInfo(diff, unit, upIsGood) {
+    var good = upIsGood ? diff >= 0 : diff <= 0;
+    var arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '–';
+    var mag = unit === 'pp' ? Math.abs(diff).toFixed(2) + ' pp' : Math.round(Math.abs(diff)) + ' ' + unit;
+    return { text: arrow + ' ' + mag + ' vs prior period', cls: good ? 'good' : 'bad' };
+  }
+  function deltaPctInfo(current, prior, upIsGood) {
+    var diff = current - prior;
+    var pct = prior ? (diff / prior) * 100 : 0;
+    var good = upIsGood ? diff >= 0 : diff <= 0;
+    var arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '–';
+    return { text: arrow + ' ' + Math.abs(pct).toFixed(1) + '% vs prior period', cls: good ? 'good' : 'bad' };
+  }
+
+  function setStat(key, valueText, info, sparkValues) {
+    document.getElementById('kpi-' + key + '-value').textContent = valueText;
+    var deltaEl = document.getElementById('kpi-' + key + '-delta');
+    deltaEl.textContent = info.text;
+    deltaEl.className = 'stat-delta ' + info.cls;
+    fillSparkline(document.getElementById('kpi-' + key + '-spark'), sparkValues);
+  }
+
+  function renderKPIs(data) {
+    var cfg = data.cfg;
+    setStat('uptime', cfg.uptime.toFixed(2) + '%',
+      deltaInfo(cfg.uptime - cfg.uptimePrior, 'pp', true),
+      genSeries(12, cfg.uptime * 10, 1, 1, 501).map(function (v) { return v / 10; }));
+
+    var latencyPrior = Math.round(data.avgLatency * 1.08);
+    setStat('latency', data.avgLatency + ' ms',
+      deltaInfo(data.avgLatency - latencyPrior, 'ms', false),
+      data.latency.slice(-12));
+
+    var requestsPrior = Math.round(data.totalRequests * 0.94);
+    setStat('requests', fmtCompact(data.totalRequests),
+      deltaPctInfo(data.totalRequests, requestsPrior, true),
+      data.traffic.slice(-12));
+
+    setStat('errors', cfg.errorRate.toFixed(3) + '%',
+      deltaInfo(cfg.errorRate - cfg.errorRatePrior, 'pp', false),
+      genSeries(12, cfg.errorRate * 100, 8, 6, 601).map(function (v) { return v / 100; }));
+  }
+
+  function buildTable(series) {
+    document.getElementById('dt-th-value').textContent = series.title + (series.unit ? ' (' + series.unit + ')' : '');
+    var body = document.getElementById('data-table-body');
+    body.innerHTML = '';
+    series.values.forEach(function (v, i) {
+      var tr = document.createElement('tr');
+      var tdT = document.createElement('td'); tdT.textContent = series.labels[i];
+      var tdV = document.createElement('td'); tdV.textContent = fmtComma(v);
+      tr.appendChild(tdT); tr.appendChild(tdV);
+      body.appendChild(tr);
+    });
+  }
+
+  function renderChart(svg, tooltip, wrap, series) {
+    svg.innerHTML = '';
+    var values = series.values, labels = series.labels, unit = series.unit;
+    var n = values.length;
+    var left = 54, right = 14, top = 18, bottom = 30, W = 640, H = 260;
+    var plotW = W - left - right, plotH = H - top - bottom;
+    var maxVal = Math.max.apply(null, values);
+    var step = niceStep(maxVal / 3);
+    var yMax = step * 3 || 1;
+    var xAt = function (i) { return left + (n === 1 ? 0 : (i / (n - 1)) * plotW); };
+    var yAt = function (v) { return top + plotH - (v / yMax) * plotH; };
+
+    for (var t = 0; t <= 3; t++) {
+      var val = step * t;
+      var y = yAt(val);
+      svg.appendChild(el('line', { x1: left, x2: W - right, y1: y, y2: y, class: t === 0 ? 'baseline' : 'grid-line' }));
+      var txt = el('text', { x: left - 8, y: y + 4, class: 'tick-label', 'text-anchor': 'end' });
+      txt.textContent = fmtComma(val);
+      svg.appendChild(txt);
+    }
+
+    var tickCount = Math.min(6, n);
+    var seen = {};
+    for (var k = 0; k < tickCount; k++) {
+      var idx = Math.round((k * (n - 1)) / Math.max(tickCount - 1, 1));
+      if (seen[idx]) continue;
+      seen[idx] = true;
+      var xtxt = el('text', { x: xAt(idx), y: H - 8, class: 'tick-label', 'text-anchor': 'middle' });
+      xtxt.textContent = labels[idx];
+      svg.appendChild(xtxt);
+    }
+
+    var d = 'M ' + xAt(0) + ' ' + yAt(values[0]);
+    for (var i = 1; i < n; i++) d += ' L ' + xAt(i) + ' ' + yAt(values[i]);
+    var areaPath = d + ' L ' + xAt(n - 1) + ' ' + yAt(0) + ' L ' + xAt(0) + ' ' + yAt(0) + ' Z';
+    svg.appendChild(el('path', { d: areaPath, class: 'area-fill' }));
+    svg.appendChild(el('path', { d: d, class: 'line-stroke' }));
+    svg.appendChild(el('circle', { cx: xAt(n - 1), cy: yAt(values[n - 1]), r: 5, class: 'end-marker' }));
+
+    var chLine = el('line', { x1: 0, x2: 0, y1: top, y2: H - bottom, class: 'crosshair-line', opacity: 0 });
+    var chDot = el('circle', { r: 5, class: 'crosshair-dot', opacity: 0 });
+    svg.appendChild(chLine);
+    svg.appendChild(chDot);
+
+    function showAt(i) {
+      i = Math.max(0, Math.min(n - 1, i));
+      var x = xAt(i), y = yAt(values[i]);
+      chLine.setAttribute('x1', x); chLine.setAttribute('x2', x); chLine.setAttribute('opacity', 1);
+      chDot.setAttribute('cx', x); chDot.setAttribute('cy', y); chDot.setAttribute('opacity', 1);
+      var rect = svg.getBoundingClientRect();
+      var px = (x / W) * rect.width, py = (y / H) * rect.height;
+      tooltip.style.left = px + 'px';
+      tooltip.style.top = py + 'px';
+      tooltip.style.opacity = 1;
+      tooltip.innerHTML = '';
+      var valEl = document.createElement('div'); valEl.className = 'tt-value';
+      valEl.textContent = fmtComma(values[i]) + (unit ? ' ' + unit : '');
+      var labEl = document.createElement('div'); labEl.className = 'tt-label';
+      labEl.textContent = labels[i];
+      tooltip.appendChild(valEl);
+      tooltip.appendChild(labEl);
+      return i;
+    }
+    function hide() {
+      chLine.setAttribute('opacity', 0);
+      chDot.setAttribute('opacity', 0);
+      tooltip.style.opacity = 0;
+    }
+
+    svg.onpointermove = function (e) {
+      var rect = svg.getBoundingClientRect();
+      var localX = ((e.clientX - rect.left) / rect.width) * W;
+      var i = Math.round(((localX - left) / plotW) * (n - 1));
+      focusedIndex = showAt(i);
+    };
+    svg.onpointerleave = hide;
+
+    var focusedIndex = n - 1;
+    wrap.onfocus = function () { showAt(focusedIndex); };
+    wrap.onblur = hide;
+    wrap.onkeydown = function (e) {
+      if (e.key === 'ArrowLeft') { focusedIndex = Math.max(0, focusedIndex - 1); showAt(focusedIndex); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { focusedIndex = Math.min(n - 1, focusedIndex + 1); showAt(focusedIndex); e.preventDefault(); }
+    };
+
+    buildTable(series);
+  }
+
+  var STATUS_META = { good: 'Operational', warning: 'Degraded', critical: 'Outage' };
+
+  function iconSVG(status) {
+    if (status === 'good') return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 6.5 L5 9.5 L10 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    if (status === 'warning') return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M6 1.5 L11 10.5 L1 10.5 Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><line x1="6" y1="5" x2="6" y2="7.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="8.8" r="0.7" fill="currentColor"/></svg>';
+    return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 2.5 L9.5 9.5 M9.5 2.5 L2.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  }
+
+  function statusPill(status, label, size) {
+    var span = document.createElement('span');
+    span.className = 'status-pill ' + status + (size ? ' ' + size : '');
+    var iconWrap = document.createElement('span');
+    iconWrap.className = 'pill-icon';
+    iconWrap.innerHTML = iconSVG(status);
+    var labelEl = document.createElement('span');
+    labelEl.textContent = label;
+    span.appendChild(iconWrap);
+    span.appendChild(labelEl);
+    return span;
+  }
+
+  var SERVICES = [
+    { name: 'api-gateway', status: 'good', latency: 132, spark: genSeries(24, 130, 18, 9, 401) },
+    { name: 'auth-service', status: 'good', latency: 98, spark: genSeries(24, 95, 12, 7, 402) },
+    { name: 'postgres-db', status: 'good', latency: 41, spark: genSeries(24, 40, 6, 4, 403) },
+    { name: 'redis-cache', status: 'warning', latency: 248, spark: genSeries(24, 175, 16, 9, 404, 85) },
+    { name: 'worker-queue', status: 'good', latency: 76, spark: genSeries(24, 78, 10, 6, 405) },
+    { name: 'cdn-edge', status: 'good', latency: 18, spark: genSeries(24, 18, 4, 2, 406) }
+  ];
+
+  function renderServices() {
+    var list = document.getElementById('service-list');
+    list.innerHTML = '';
+    SERVICES.forEach(function (svc) {
+      var li = document.createElement('li');
+      li.className = 'service-row';
+      var nameEl = document.createElement('span'); nameEl.className = 'service-name'; nameEl.textContent = svc.name;
+      var pill = statusPill(svc.status, STATUS_META[svc.status]);
+      var sparkSvg = el('svg', { viewBox: '0 0 100 28', preserveAspectRatio: 'none', class: 'service-spark', 'aria-hidden': 'true' });
+      var valEl = document.createElement('span'); valEl.className = 'service-value'; valEl.textContent = svc.latency + ' ms';
+      li.appendChild(nameEl); li.appendChild(pill); li.appendChild(sparkSvg); li.appendChild(valEl);
+      list.appendChild(li);
+      fillSparkline(sparkSvg, svc.spark);
+    });
+
+    var worst = SERVICES.reduce(function (w, s) {
+      if (s.status === 'critical') return 'critical';
+      if (s.status === 'warning' && w !== 'critical') return 'warning';
+      return w;
+    }, 'good');
+    var chip = document.getElementById('status-chip');
+    var chipLabel = document.getElementById('status-chip-label');
+    chip.className = 'status-chip ' + worst;
+    chipLabel.textContent = worst === 'good' ? 'All systems operational' : worst === 'warning' ? 'Partial degradation' : 'Service disruption';
+  }
+
+  var EVENT_META = {
+    info: { status: 'good', label: 'Info' },
+    warning: { status: 'warning', label: 'Warning' },
+    critical: { status: 'critical', label: 'Critical' },
+    resolved: { status: 'good', label: 'Resolved' }
+  };
+  var EVENTS = [
+    { when: '2 min ago', service: 'redis-cache', severity: 'warning', message: 'p95 latency exceeded 250 ms threshold' },
+    { when: '41 min ago', service: 'worker-queue', severity: 'info', message: 'Autoscaled workers from 4 to 6' },
+    { when: '2 hr ago', service: 'api-gateway', severity: 'info', message: 'Deployed build 8f3c1ac to production' },
+    { when: '5 hr ago', service: 'postgres-db', severity: 'info', message: 'Nightly backup completed (2.1 GB)' },
+    { when: '11 hr ago', service: 'cdn-edge', severity: 'resolved', message: 'Elevated 5xx rate resolved after edge redeploy' },
+    { when: '1 day ago', service: 'auth-service', severity: 'info', message: 'Rotated signing keys' }
+  ];
+
+  function renderEvents() {
+    var body = document.getElementById('events-body');
+    body.innerHTML = '';
+    EVENTS.forEach(function (ev) {
+      var meta = EVENT_META[ev.severity];
+      var tr = document.createElement('tr');
+      var tdWhen = document.createElement('td'); tdWhen.textContent = ev.when; tdWhen.className = 'mono';
+      var tdSvc = document.createElement('td'); tdSvc.textContent = ev.service; tdSvc.className = 'mono';
+      var tdSev = document.createElement('td'); tdSev.appendChild(statusPill(meta.status, meta.label, 'sm'));
+      var tdMsg = document.createElement('td'); tdMsg.textContent = ev.message;
+      tr.appendChild(tdWhen); tr.appendChild(tdSvc); tr.appendChild(tdSev); tr.appendChild(tdMsg);
+      body.appendChild(tr);
+    });
+  }
+
+  var currentRange = '24h', currentMetric = 'latency';
+
+  function renderAll() {
+    var data = buildRangeData(currentRange);
+    renderKPIs(data);
+    var seriesValues = currentMetric === 'latency' ? data.latency : data.traffic;
+    var seriesUnit = currentMetric === 'latency' ? 'ms' : 'reqs';
+    var seriesTitle = currentMetric === 'latency' ? 'p95 latency' : 'Requests';
+    renderChart(
+      document.getElementById('trend-svg'),
+      document.getElementById('chart-tooltip'),
+      document.getElementById('chart-wrap'),
+      { values: seriesValues, labels: data.labels, unit: seriesUnit, title: seriesTitle }
+    );
+    document.getElementById('updated-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  document.querySelectorAll('.range-filter button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.range-filter button').forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+      btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true');
+      currentRange = btn.dataset.range;
+      renderAll();
+    });
+  });
+  document.querySelectorAll('.metric-tabs button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.metric-tabs button').forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+      btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true');
+      currentMetric = btn.dataset.metric;
+      renderAll();
+    });
+  });
+  document.getElementById('table-toggle').addEventListener('click', function () {
+    var wrap = document.getElementById('data-table-wrap');
+    var expanded = this.getAttribute('aria-expanded') === 'true';
+    wrap.hidden = expanded;
+    this.setAttribute('aria-expanded', String(!expanded));
+    this.textContent = expanded ? 'View as table' : 'Hide table';
+  });
+
+  renderServices();
+  renderEvents();
+  renderAll();
+})();
+</script>
