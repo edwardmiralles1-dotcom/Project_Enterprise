@@ -66,6 +66,23 @@
   .meta-row span{ display:inline-flex; align-items:center; gap:6px; }
   .meta-row b{ color:var(--ink-2); font-weight:600; }
 
+  /* ---------- quick nav ---------- */
+  .quicknav{ display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0; }
+  .quicknav a{ font-family:var(--font-sans); font-size:12px; font-weight:600; color:var(--ink-2);
+               text-decoration:none; padding:6px 13px; border:1px solid var(--border); border-radius:999px;
+               background:var(--surface); }
+  .quicknav a:hover{ border-color:var(--accent); color:var(--accent); }
+
+  /* ---------- key findings ---------- */
+  .findings{ background:color-mix(in srgb, var(--accent) 6%, var(--surface)); border:1px solid var(--border);
+             border-radius:12px; padding:22px 26px 24px; margin:24px 0; box-shadow:var(--shadow); }
+  .findings-list{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px 26px;
+                   list-style:none; margin:12px 0 0; padding:0; }
+  .findings-list li{ font-size:13px; color:var(--ink-2); line-height:1.5; padding-left:16px; position:relative; }
+  .findings-list li::before{ content:''; position:absolute; left:0; top:6px; width:7px; height:7px;
+                              border-radius:50%; background:var(--accent); }
+  .findings-list b{ color:var(--ink); font-weight:700; }
+
   /* ---------- KPI strip ---------- */
   .kpis{ display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--border);
          border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:28px 0 40px;
@@ -207,6 +224,15 @@
     </div>
   </header>
 
+  <nav class="quicknav" aria-label="Report sections">
+    <a href="#ex1">1. Priority mix</a>
+    <a href="#ex2">2. Top risks</a>
+    <a href="#ex3">3. Control gaps</a>
+    <a href="#ex4">4. Asset concentration</a>
+    <a href="#ex5">5. Ownership</a>
+    <a href="#ex6">6. Recommendations</a>
+  </nav>
+
   <section class="kpis" aria-label="Key figures">
     <div class="kpi">
       <div class="label">Total risks logged</div>
@@ -233,6 +259,16 @@
       <div class="value">3</div>
       <div class="cap"><span class="dot" style="background:var(--warning)"></span>94 of 97 (96.9%) now Low</div>
     </div>
+  </section>
+
+  <section class="findings" aria-label="Key findings">
+    <p class="eyebrow" style="margin:0;">At a glance</p>
+    <ul class="findings-list">
+      <li><b>System Administrator + Network Administrator</b> own 44% of all logged risk — a key-person concentration spanning both registers (Exhibit 5).</li>
+      <li><b>Systems, Applications &amp; Databases</b> accounts for 51% of ISMS risk volume — the single largest control-investment target (Exhibit 4).</li>
+      <li><b>94 of 97 risks (97%)</b> are now residual-Low after existing controls — only 3 gaps remain open (Exhibit 3).</li>
+      <li><b>5 BCMS risks</b> are rated "Critical" on a qualitative scale not yet reconciled with ISMS's numeric scoring (Exhibit 1).</li>
+    </ul>
   </section>
 
   <!-- EXHIBIT 1 -->
