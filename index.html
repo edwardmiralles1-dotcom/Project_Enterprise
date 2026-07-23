@@ -50,11 +50,11 @@
   .brand-logo{ width:186px; aspect-ratio:1794/924; background-image:var(--logo-img);
                background-size:contain; background-repeat:no-repeat; background-position:left center;
                margin-bottom:18px; position:relative; }
-  .header-shard{ position:absolute; z-index:-1; top:-48px; right:-56px; width:460px; height:260px;
-                  background:var(--shard); opacity:1;
+  .header-shard{ position:absolute; z-index:-1; top:-30px; right:60px; width:220px; height:160px;
+                  background:var(--shard); opacity:.10;
                   clip-path:polygon(0% 31%,100% 0%,74% 100%,0% 100%); pointer-events:none; }
-  @media (max-width:900px){ .header-shard{ width:320px; height:190px; } }
-  @media (max-width:600px){ .header-shard{ display:none; } }
+  .header-shard.main{ right:-40px; width:300px; height:210px; top:-40px; background:var(--shard); opacity:.13; }
+  @media (max-width:760px){ .header-shard{ display:none; } }
   .eyebrow{ font-family:var(--font-sans); font-size:11px; font-weight:700; letter-spacing:.14em;
             text-transform:uppercase; color:var(--accent); margin:0 0 10px;
             display:flex; align-items:center; gap:7px; }
@@ -194,6 +194,7 @@
 
   <header class="report-header">
     <div class="header-shard" aria-hidden="true"></div>
+    <div class="header-shard main" aria-hidden="true"></div>
     <div class="brand-logo" role="img" aria-label="ABANA logo"></div>
     <p class="eyebrow">Governance, Risk &amp; Compliance — Management Report</p>
     <h1>BCMS &amp; ISMS Risk Assessment 2025</h1>
